@@ -1,0 +1,20 @@
+const express = require("express");
+const contactController = require("../controllers/contactController");
+const checkAuth = require("../middlewares/checkAuth");
+const validate = require("../middlewares/validate");
+const { createContactSchema } = require("../validators/contactValidator");
+
+const router = express.Router();
+
+router.get("/", checkAuth, contactController.getContacts);
+router.post(
+	"/",
+	checkAuth,
+	validate(createContactSchema),
+	contactController.addContact,
+);
+router.delete("/:id", checkAuth, contactController.removeContact);
+
+router.get("/invite/:token", contactController.getInviteInfo);
+
+module.exports = router;
