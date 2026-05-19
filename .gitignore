@@ -1,14 +1,15 @@
-.DS_Store
-Thumbs.db
+# Secrets
+.env
 
+# Database
+chroma_db/
+
+# Python
+__pycache__/
+*.pyc
+venv/
+.venv/
+
+# IDE
 .vscode/
 .idea/
-*.swp
-*.swo
-
-.env
-.env.local
-.venv/
-node_modules/
-
-*.log
