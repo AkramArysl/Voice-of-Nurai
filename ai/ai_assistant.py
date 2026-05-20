@@ -8,7 +8,7 @@ load_dotenv()
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 
-SYSTEM_PROMPT = """Ты — AI-ассистент безопасности Voice of Nurai.
+SYSTEM_PROMPT = """Ты - AI-ассистент безопасности Voice of Nurai.
 Ты помогаешь девушкам в Кыргызстане и странах СНГ в опасных ситуациях.
 
 ПРАВИЛО:

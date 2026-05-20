@@ -31,19 +31,19 @@ def get_emergency_keyboard():
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
-        "🛡️ Voice of Nurai — AI Safety Assistant\n\n"
+        "🛡️ Voice of Nurai - AI Safety Assistant\n\n"
         "Я помогаю девушкам в опасных ситуациях.\n\n"
         "- Опишите ситуацию словами\n"
         "- Или нажмите одну из кнопок ниже\n\n"
-        "🚨 Если нужна срочная помощь — нажмите SOS",
+        "🚨 Если нужна срочная помощь - нажмите SOS",
         reply_markup=get_emergency_keyboard()
     )
 
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
-        "🛡️ Voice of Nurai — Что я умею:\n\n"
-        "1. Напишите о ситуации — я дам совет\n"
+        "🛡️ Voice of Nurai - Что я умею:\n\n"
+        "1. Напишите о ситуации - я дам совет\n"
         "2. Используйте кнопки для быстрого ответа\n"
         "3. Нажмите SOS для экстренной инструкции\n\n"
         "📞 В критической ситуации: кнопка SOS в приложении Nurai или звонок 112",
@@ -116,7 +116,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 4. ПОЗВОНИТЕ доверенному человеку и скажите, где выходите
 
-5. ПОСЛЕ — сообщите в такси-агрегатор и позвоните 102"""
+5. ПОСЛЕ - сообщите в такси-агрегатор и позвоните 102"""
         await update.message.reply_text(answer, reply_markup=get_emergency_keyboard())
         return
     
@@ -129,7 +129,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 3. ВЫЗОВИТЕ такси до дома подруги или гостиницы
 
-4. ПОСЛЕДНИЙ ВАРИАНТ — вызовите полицию 102
+4. ПОСЛЕДНИЙ ВАРИАНТ - вызовите полицию 102
 
 Не заходите в тёмный подъезд одна!"""
         await update.message.reply_text(answer, reply_markup=get_emergency_keyboard())
@@ -138,9 +138,9 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif user_message == "👤 КТО-ТО СЛЕДИТ":
         answer = """⚠️ Если вы заметили, что кто-то следит:
 
-1. ПРОВЕРЬТЕ — перейдите на другую сторону улицы
+1. ПРОВЕРЬТЕ - перейдите на другую сторону улицы
 
-2. НЕ ИДИТЕ ДОМОЙ — идите в людное место
+2. НЕ ИДИТЕ ДОМОЙ - идите в людное место
 
 3. ЗАЙДИТЕ в магазин или кафе и позвоните 112
 
