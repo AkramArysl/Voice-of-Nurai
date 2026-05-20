@@ -152,7 +152,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif user_message == "🆘 ПОМОЩЬ РЯДОМ":
         answer = ask_ai("мне нужна помощь, где найти безопасное место рядом")
     else:
-        answer = ask_ai(user_message)
+        answer = ask_ai(user_message, user_id=str(update.effective_user.id))
     
     if answer:
         await update.message.reply_text(answer, reply_markup=get_emergency_keyboard())

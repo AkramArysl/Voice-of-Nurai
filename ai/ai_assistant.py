@@ -46,9 +46,10 @@ SYSTEM_PROMPT = """Ты - AI-ассистент безопасности Voice o
 - Паниковать или запугивать
 """
 
-def ask_ai(user_message):
-    """Ищет статьи в базе знаний и отправляет запрос в OpenRouter."""
-    
+# В начале файла добавьте словарь для хранения истории
+conversation_history = {}
+
+def ask_ai(user_message, user_id=None):
     context_chunks = search_similar(user_message, n_results=3)
     
     if context_chunks:
@@ -57,9 +58,29 @@ def ask_ai(user_message):
     else:
         system_with_context = SYSTEM_PROMPT
     
+    # Память: последние 5 сообщений пользователя
+    if user_id:
+        if user_id not in conversation_history:
+            conversation_history[user_id] = []
+        
+        history = conversation_history[user_id]
+        history.append({"role": "user", "content": user_message})
+        
+        # Оставляем только последние 5
+        if len(history) > 5:
+            history = history[-5:]
+            conversation_history[user_id] = history
+        
+        # Добавляем историю в промпт
+        if len(history) > 1:
+            history_text = "\n".join([f"- {msg['content']}" for msg in history[:-1]])
+            system_with_context += f"\n\nПредыдущие сообщения пользователя:\n{history_text}"
+    
     headers = {
         "Authorization": f"Bearer {OPENROUTER_API_KEY}",
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        "HTTP-Referer": "http://localhost:8080",
+        "X-Title": "Voice of Nurai"
     }
 
     data = {
@@ -68,15 +89,19 @@ def ask_ai(user_message):
             {"role": "system", "content": system_with_context},
             {"role": "user", "content": user_message}
         ],
-        "temperature": 0.3,
-        "max_tokens": 500
+        "temperature": 0.5,
+        "max_tokens": 800
     }
 
-    response = requests.post(OPENROUTER_URL, headers=headers, json=data)
-
-    if response.status_code == 200:
-        response_data = response.json()
-        return response_data["choices"][0]["message"]["content"]
-    else:
-        print(f"OpenRouter error: {response.status_code}")
+    try:
+        response = requests.post(OPENROUTER_URL, headers=headers, json=data, timeout=30)
+        
+        if response.status_code == 200:
+            response_data = response.json()
+            return response_data["choices"][0]["message"]["content"]
+        else:
+            print(f"OpenRouter error: {response.status_code}")
+            return None
+    except Exception as e:
+        print(f"Request failed: {e}")
         return None
