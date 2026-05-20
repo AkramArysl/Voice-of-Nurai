@@ -23,4 +23,36 @@ const create = async ({ name, email, password }) => {
 	return { id: result.insertId, name, email };
 };
 
-module.exports = { findByEmail, findById, create };
+const findByIdWithPassword = async (id) => {
+	const [rows] = await pool.query("SELECT * FROM users WHERE id = ?", [id]);
+	return rows[0] || null;
+};
+
+const updateById = async (id, { name, email }) => {
+	await pool.query("UPDATE users SET name = ?, email = ? WHERE id = ?", [
+		name,
+		email,
+		id,
+	]);
+};
+
+const updatePassword = async (id, hashedPassword) => {
+	await pool.query("UPDATE users SET password = ? WHERE id = ?", [
+		hashedPassword,
+		id,
+	]);
+};
+
+const deleteById = async (id) => {
+	await pool.query("DELETE FROM users WHERE id = ?", [id]);
+};
+
+module.exports = {
+	findByEmail,
+	findById,
+	findByIdWithPassword,
+	create,
+	updateById,
+	updatePassword,
+	deleteById,
+};

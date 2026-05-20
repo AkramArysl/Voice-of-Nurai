@@ -9,6 +9,7 @@ const { testConnection } = require("./config/db");
 const errorHandler = require("./middlewares/errorHandler");
 
 const authRoutes = require("./routes/authRoutes");
+const userRoutes = require("./routes/userRoutes");
 const contactRoutes = require("./routes/contactRoutes");
 const sosRoutes = require("./routes/sosRoutes");
 const reportRoutes = require("./routes/reportRoutes");
@@ -30,6 +31,7 @@ app.use(cookieParser());
 app.get("/api/health", (req, res) => res.json({ status: "ok" }));
 
 app.use("/api/auth", authRoutes);
+app.use("/api/users", userRoutes);
 app.use("/api/contacts", contactRoutes);
 app.use("/api/sos", sosRoutes);
 app.use("/api/reports", reportRoutes);
