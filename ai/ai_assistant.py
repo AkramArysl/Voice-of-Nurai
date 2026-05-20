@@ -21,9 +21,6 @@ SYSTEM_PROMPT = """Ты - AI-ассистент безопасности Voice o
 - Ты отвечаешь ТОЛЬКО на вопросы, связанные с безопасностью, страхом, угрозами, преследованием, подозрительными ситуациями, экстренной помощью.
 - Если вопрос НЕ связан с безопасностью - используй шаблон отказа.
 
-ШАБЛОН ОТКАЗА:
-"Извините, я помогаю только с вопросами безопасности. Если вы чувствуете опасность - опишите ситуацию, или нажмите SOS-кнопку в приложении Nurai, или позвоните 112."
-
 ПРАВИЛА ОТВЕТОВ:
 - Пиши чистым текстом, без форматирования (без звёздочек, Markdown, HTML)
 - Нумерация шагов: 1. 2. 3. (цифра, точка, пробел)
@@ -46,7 +43,6 @@ SYSTEM_PROMPT = """Ты - AI-ассистент безопасности Voice o
 - Паниковать или запугивать
 """
 
-# В начале файла добавьте словарь для хранения истории
 conversation_history = {}
 
 def ask_ai(user_message, user_id=None):
@@ -58,7 +54,6 @@ def ask_ai(user_message, user_id=None):
     else:
         system_with_context = SYSTEM_PROMPT
     
-    # Память: последние 5 сообщений пользователя
     if user_id:
         if user_id not in conversation_history:
             conversation_history[user_id] = []
@@ -66,12 +61,10 @@ def ask_ai(user_message, user_id=None):
         history = conversation_history[user_id]
         history.append({"role": "user", "content": user_message})
         
-        # Оставляем только последние 5
         if len(history) > 5:
             history = history[-5:]
             conversation_history[user_id] = history
         
-        # Добавляем историю в промпт
         if len(history) > 1:
             history_text = "\n".join([f"- {msg['content']}" for msg in history[:-1]])
             system_with_context += f"\n\nПредыдущие сообщения пользователя:\n{history_text}"
