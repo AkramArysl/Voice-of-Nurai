@@ -68,7 +68,6 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_message = update.message.text
     await update.message.chat.send_action(action="typing")
     
-    # Обработка кнопок
     if user_message == "🚨 SOS ЭКСТРЕННАЯ ПОМОЩЬ":
         await sos_command(update, context)
         return
@@ -164,7 +163,6 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
 
 
-# Запуск бота
 app = ApplicationBuilder().token(TELEGRAM_TOKEN).build()
 
 app.add_handler(CommandHandler("start", start))
