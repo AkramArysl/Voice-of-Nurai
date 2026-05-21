@@ -14,7 +14,7 @@ const addContact = async (req, res, next) => {
 		const contact = await contactService.addContact(req.user.id, req.body);
 		res
 			.status(201)
-			.json({ message: "Contact added. Invite email sent.", contact });
+			.json({ message: "Контакт добавлен. Приглашение отправлено.", contact });
 	} catch (err) {
 		next(err);
 	}
@@ -29,10 +29,22 @@ const getInviteInfo = async (req, res, next) => {
 	}
 };
 
+// Called by the SOS Telegram bot: POST /api/contacts/telegram
+// Body: { inviteToken, chatId }
+const linkTelegram = async (req, res, next) => {
+	try {
+		const { inviteToken, chatId } = req.body;
+		await contactService.linkTelegram(inviteToken, chatId);
+		res.json({ message: "Telegram успешно подключён" });
+	} catch (err) {
+		next(err);
+	}
+};
+
 const removeContact = async (req, res, next) => {
 	try {
 		await contactService.removeContact(req.params.id, req.user.id);
-		res.json({ message: "Contact removed" });
+		res.json({ message: "Контакт удалён" });
 	} catch (err) {
 		next(err);
 	}
@@ -42,5 +54,6 @@ module.exports = {
 	getContacts,
 	addContact,
 	getInviteInfo,
+	linkTelegram,
 	removeContact,
 };

@@ -6,4 +6,9 @@ const createContactSchema = Joi.object({
 	email: Joi.string().email().required(),
 });
 
-module.exports = { createContactSchema };
+const linkTelegramSchema = Joi.object({
+	inviteToken: Joi.string().required(),
+	chatId: Joi.number().integer().required(),
+});
+
+module.exports = { createContactSchema, linkTelegramSchema };

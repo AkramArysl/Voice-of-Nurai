@@ -10,7 +10,7 @@ const transporter = nodemailer.createTransport({
 
 const sendEmail = async ({ to, subject, html }) => {
 	if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
-		console.warn("SMTP not configured, skipping email");
+		console.warn("SMTP не настроен, письмо не отправлено");
 		return;
 	}
 	await transporter.sendMail({
@@ -23,7 +23,7 @@ const sendEmail = async ({ to, subject, html }) => {
 
 const sendTelegram = async (chatId, text) => {
 	if (!process.env.TELEGRAM_BOT_TOKEN) {
-		console.warn("Telegram not configured, skipping message");
+		console.warn("TELEGRAM_BOT_TOKEN не задан, сообщение не отправлено");
 		return;
 	}
 	const url = `https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`;
@@ -35,17 +35,17 @@ const sendTelegram = async (chatId, text) => {
 };
 
 const sendSosAlerts = async ({ senderName, contacts, lat, lng, trackUrl }) => {
-	const locationStr = lat && lng ? `\nLast known location: ${lat}, ${lng}` : "";
+	const locationStr =
+		lat && lng ? `\nПоследние координаты: ${lat}, ${lng}` : "";
 
 	const promises = contacts.map(async (contact) => {
 		const emailHtml = `
-      <h2>🚨 SOS Alert from ${senderName}</h2>
-      <p>${senderName} has triggered an SOS alert and may need help.</p>
-      ${locationStr ? `<p>Last known location: ${lat}, ${lng}</p>` : ""}
-      <p><a href="${trackUrl}">Track live location →</a></p>
+      <h2>🚨 SOS сигнал от ${senderName}</h2>
+      <p>${senderName} нажал(а) кнопку SOS и может нуждаться в помощи.</p>
+      ${locationStr ? `<p>Последние координаты: ${lat}, ${lng}</p>` : ""}
+      <p><a href="${trackUrl}">Следить за местоположением в реальном времени →</a></p>
     `;
-
-		const telegramText = `🚨 <b>SOS Alert</b>\n${senderName} needs help!${locationStr}\n\n<a href="${trackUrl}">Track live location →</a>`;
+		const telegramText = `🚨 <b>SOS сигнал</b>\n${senderName} нуждается в помощи!${locationStr}\n\n<a href="${trackUrl}">Следить за местоположением →</a>`;
 
 		const tasks = [];
 
@@ -53,13 +53,43 @@ const sendSosAlerts = async ({ senderName, contacts, lat, lng, trackUrl }) => {
 			tasks.push(
 				sendEmail({
 					to: contact.email,
-					subject: `🚨 SOS from ${senderName}`,
+					subject: `🚨 SOS от ${senderName}`,
 					html: emailHtml,
 				}),
 			);
 		}
 
-		if (contact.telegram_chat_id) {
+		if (contact.telegram_chat_id && contact.invite_status === "accepted") {
+			tasks.push(sendTelegram(contact.telegram_chat_id, telegramText));
+		}
+
+		await Promise.allSettled(tasks);
+	});
+
+	await Promise.allSettled(promises);
+};
+
+const sendResolvedAlerts = async ({ senderName, contacts }) => {
+	const promises = contacts.map(async (contact) => {
+		const emailHtml = `
+      <h2>✅ ${senderName} в безопасности</h2>
+      <p>${senderName} завершил(а) SOS сигнал и находится в безопасности.</p>
+    `;
+		const telegramText = `✅ <b>${senderName} в безопасности</b>\nSOS сигнал завершён.`;
+
+		const tasks = [];
+
+		if (contact.email) {
+			tasks.push(
+				sendEmail({
+					to: contact.email,
+					subject: `✅ ${senderName} в безопасности`,
+					html: emailHtml,
+				}),
+			);
+		}
+
+		if (contact.telegram_chat_id && contact.invite_status === "accepted") {
 			tasks.push(sendTelegram(contact.telegram_chat_id, telegramText));
 		}
 
@@ -70,18 +100,20 @@ const sendSosAlerts = async ({ senderName, contacts, lat, lng, trackUrl }) => {
 };
 
 const sendInviteEmail = async ({ contact, inviteToken }) => {
-	const inviteUrl = `${process.env.CLIENT_URL}/join?token=${inviteToken}`;
+	const botUsername = process.env.TELEGRAM_BOT_USERNAME;
+	const inviteUrl = `https://t.me/${botUsername}?start=${inviteToken}`;
+
 	await sendEmail({
 		to: contact.email,
-		subject: "You have been added as an emergency contact",
+		subject: "Вас добавили как доверенное лицо",
 		html: `
-      <h2>You're someone's trusted contact</h2>
-      <p>${contact.name}, you have been added as an emergency contact on Safety App.</p>
-      <p>Click the link below to confirm and optionally connect your Telegram so you can receive instant alerts:</p>
-      <p><a href="${inviteUrl}">Accept & connect Telegram →</a></p>
-      <p>If you don't know who added you, you can ignore this email.</p>
+      <h2>Вы — доверенное лицо</h2>
+      <p>${contact.name}, вас добавили как доверенное лицо в приложении безопасности Nurai.</p>
+      <p>Нажмите на ссылку ниже, чтобы подключить Telegram и получать мгновенные уведомления, если человек нажмёт кнопку SOS:</p>
+      <p><a href="${inviteUrl}">Подключить Telegram →</a></p>
+      <p>Если вы не знаете, кто вас добавил, просто проигнорируйте это письмо.</p>
     `,
 	});
 };
 
-module.exports = { sendSosAlerts, sendInviteEmail };
+module.exports = { sendSosAlerts, sendResolvedAlerts, sendInviteEmail };

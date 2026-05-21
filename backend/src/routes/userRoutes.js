@@ -9,7 +9,6 @@ const {
 
 const router = express.Router();
 
-// All user routes require auth
 router.use(checkAuth);
 
 router.get("/profile", userController.getProfile);

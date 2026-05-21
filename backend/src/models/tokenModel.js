@@ -9,7 +9,7 @@ const create = async ({ userId, token, expiresAt }) => {
 
 const findByToken = async (token) => {
 	const [rows] = await pool.query(
-		`SELECT rt.*, u.id as user_id, u.name, u.email
+		`SELECT rt.*, u.id AS user_id, u.username, u.email
      FROM refresh_tokens rt
      JOIN users u ON u.id = rt.user_id
      WHERE rt.token = ? AND rt.expires_at > NOW()`,

@@ -6,36 +6,43 @@ const SALT_ROUNDS = 12;
 const getProfile = async (userId) => {
 	const user = await userModel.findById(userId);
 	if (!user) {
-		const err = new Error("User not found");
+		const err = new Error("Пользователь не найден");
 		err.status = 404;
 		throw err;
 	}
 	return user;
 };
 
-const updateProfile = async (userId, { name, email }) => {
-	const existing = await userModel.findByEmail(email);
-	if (existing && existing.id !== userId) {
-		const err = new Error("Email already in use");
+const updateProfile = async (userId, { username, email }) => {
+	const existingEmail = await userModel.findByEmail(email);
+	if (existingEmail && existingEmail.id !== userId) {
+		const err = new Error("Этот email уже используется");
 		err.status = 409;
 		throw err;
 	}
 
-	await userModel.updateById(userId, { name, email });
+	const existingUsername = await userModel.findByUsername(username);
+	if (existingUsername && existingUsername.id !== userId) {
+		const err = new Error("Это имя пользователя уже занято");
+		err.status = 409;
+		throw err;
+	}
+
+	await userModel.updateById(userId, { username, email });
 	return userModel.findById(userId);
 };
 
 const updatePassword = async (userId, { currentPassword, newPassword }) => {
 	const user = await userModel.findByIdWithPassword(userId);
 	if (!user) {
-		const err = new Error("User not found");
+		const err = new Error("Пользователь не найден");
 		err.status = 404;
 		throw err;
 	}
 
 	const match = await bcrypt.compare(currentPassword, user.password);
 	if (!match) {
-		const err = new Error("Current password is incorrect");
+		const err = new Error("Текущий пароль неверен");
 		err.status = 401;
 		throw err;
 	}
@@ -48,9 +55,4 @@ const deleteAccount = async (userId) => {
 	await userModel.deleteById(userId);
 };
 
-module.exports = {
-	getProfile,
-	updateProfile,
-	updatePassword,
-	deleteAccount,
-};
+module.exports = { getProfile, updateProfile, updatePassword, deleteAccount };

@@ -6,7 +6,7 @@ const createTables = async () => {
 	const queries = [
 		`CREATE TABLE IF NOT EXISTS users (
       id          INT AUTO_INCREMENT PRIMARY KEY,
-      name        VARCHAR(100)  NOT NULL,
+      username    VARCHAR(100)  NOT NULL UNIQUE,
       email       VARCHAR(191)  NOT NULL UNIQUE,
       password    VARCHAR(255)  NOT NULL,
       created_at  DATETIME      DEFAULT NOW()
@@ -27,7 +27,6 @@ const createTables = async () => {
       name              VARCHAR(100)  NOT NULL,
       surname           VARCHAR(100)  NOT NULL,
       email             VARCHAR(191)  NOT NULL,
-      telegram_handle   VARCHAR(100)  DEFAULT NULL,
       telegram_chat_id  BIGINT        DEFAULT NULL,
       invite_token      VARCHAR(64)   UNIQUE,
       invite_status     ENUM('pending','accepted') DEFAULT 'pending',
@@ -38,11 +37,10 @@ const createTables = async () => {
 		`CREATE TABLE IF NOT EXISTS reports (
       id          INT AUTO_INCREMENT PRIMARY KEY,
       user_id     INT           NOT NULL,
-      title       VARCHAR(255)  NOT NULL,
-      description TEXT          NOT NULL,
-      lat         DECIMAL(9,6)  NOT NULL,
-      lng         DECIMAL(9,6)  NOT NULL,
-      address     VARCHAR(255)  DEFAULT NULL,
+      category    ENUM('harassment','suspicious_person','dangerous_area','other') NOT NULL,
+      description TEXT          DEFAULT NULL,
+      location    VARCHAR(255)  NOT NULL,
+      photo_url   VARCHAR(500)  DEFAULT NULL,
       created_at  DATETIME      DEFAULT NOW(),
       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     )`,
@@ -64,11 +62,11 @@ const createTables = async () => {
 		await pool.query(query);
 	}
 
-	console.log("All tables created successfully");
+	console.log("Все таблицы успешно созданы");
 	process.exit(0);
 };
 
 createTables().catch((err) => {
-	console.error("Migration failed:", err);
+	console.error("Миграция не удалась:", err);
 	process.exit(1);
 });

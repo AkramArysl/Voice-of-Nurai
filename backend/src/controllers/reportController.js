@@ -11,8 +11,8 @@ const getAll = async (req, res, next) => {
 
 const create = async (req, res, next) => {
 	try {
-		const report = await reportService.create(req.user.id, req.body);
-		res.status(201).json({ message: "Report created", report });
+		const report = await reportService.create(req.user.id, req.body, req.file);
+		res.status(201).json({ message: "Репорт создан", report });
 	} catch (err) {
 		next(err);
 	}
@@ -21,7 +21,7 @@ const create = async (req, res, next) => {
 const remove = async (req, res, next) => {
 	try {
 		await reportService.remove(req.params.id, req.user.id);
-		res.json({ message: "Report deleted" });
+		res.json({ message: "Репорт удалён" });
 	} catch (err) {
 		next(err);
 	}

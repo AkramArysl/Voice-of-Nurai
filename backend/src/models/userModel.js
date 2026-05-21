@@ -7,20 +7,19 @@ const findByEmail = async (email) => {
 	return rows[0] || null;
 };
 
-const findById = async (id) => {
-	const [rows] = await pool.query(
-		"SELECT id, name, email, created_at FROM users WHERE id = ?",
-		[id],
-	);
+const findByUsername = async (username) => {
+	const [rows] = await pool.query("SELECT * FROM users WHERE username = ?", [
+		username,
+	]);
 	return rows[0] || null;
 };
 
-const create = async ({ name, email, password }) => {
-	const [result] = await pool.query(
-		"INSERT INTO users (name, email, password) VALUES (?, ?, ?)",
-		[name, email, password],
+const findById = async (id) => {
+	const [rows] = await pool.query(
+		"SELECT id, username, email, created_at FROM users WHERE id = ?",
+		[id],
 	);
-	return { id: result.insertId, name, email };
+	return rows[0] || null;
 };
 
 const findByIdWithPassword = async (id) => {
@@ -28,9 +27,17 @@ const findByIdWithPassword = async (id) => {
 	return rows[0] || null;
 };
 
-const updateById = async (id, { name, email }) => {
-	await pool.query("UPDATE users SET name = ?, email = ? WHERE id = ?", [
-		name,
+const create = async ({ username, email, password }) => {
+	const [result] = await pool.query(
+		"INSERT INTO users (username, email, password) VALUES (?, ?, ?)",
+		[username, email, password],
+	);
+	return { id: result.insertId, username, email };
+};
+
+const updateById = async (id, { username, email }) => {
+	await pool.query("UPDATE users SET username = ?, email = ? WHERE id = ?", [
+		username,
 		email,
 		id,
 	]);
@@ -49,6 +56,7 @@ const deleteById = async (id) => {
 
 module.exports = {
 	findByEmail,
+	findByUsername,
 	findById,
 	findByIdWithPassword,
 	create,

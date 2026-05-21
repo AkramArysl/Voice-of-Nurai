@@ -2,7 +2,8 @@ const { pool } = require("../config/db");
 
 const findAllByUserId = async (userId) => {
 	const [rows] = await pool.query(
-		"SELECT id, name, surname, email, telegram_handle, telegram_chat_id, invite_status, created_at FROM contacts WHERE user_id = ?",
+		`SELECT id, name, surname, email, telegram_chat_id, invite_status, created_at
+     FROM contacts WHERE user_id = ?`,
 		[userId],
 	);
 	return rows;

@@ -62,7 +62,6 @@ const setupWebSocket = (server) => {
 							watcher.send(payload);
 						}
 					});
-
 					sessions.delete(sessionId);
 				}
 			} catch (err) {
@@ -96,7 +95,7 @@ const setupWebSocket = (server) => {
 		});
 	});
 
-	console.log("WebSocket server ready on /ws");
+	console.log("WebSocket сервер готов на /ws");
 };
 
 module.exports = setupWebSocket;

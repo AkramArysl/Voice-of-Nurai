@@ -1,11 +1,22 @@
 const Joi = require("joi");
 
+const VALID_CATEGORIES = [
+	"harassment",
+	"suspicious_person",
+	"dangerous_area",
+	"other",
+];
+
 const createReportSchema = Joi.object({
-	title: Joi.string().min(3).max(255).required(),
-	description: Joi.string().min(5).required(),
-	lat: Joi.number().min(-90).max(90).required(),
-	lng: Joi.number().min(-180).max(180).required(),
-	address: Joi.string().max(255).optional().allow(""),
+	category: Joi.string()
+		.valid(...VALID_CATEGORIES)
+		.required(),
+	description: Joi.when("category", {
+		is: "other",
+		then: Joi.string().min(1).required(),
+		otherwise: Joi.string().min(1).optional().allow("", null),
+	}),
+	location: Joi.string().min(1).max(255).required(),
 });
 
 module.exports = { createReportSchema };

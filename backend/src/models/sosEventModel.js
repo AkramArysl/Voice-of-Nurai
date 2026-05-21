@@ -10,7 +10,7 @@ const create = async ({ userId, sessionId, lat, lng }) => {
 
 const findBySessionId = async (sessionId) => {
 	const [rows] = await pool.query(
-		`SELECT se.*, u.name AS user_name
+		`SELECT se.*, u.username AS user_name
      FROM sos_events se
      JOIN users u ON u.id = se.user_id
      WHERE se.session_id = ?`,

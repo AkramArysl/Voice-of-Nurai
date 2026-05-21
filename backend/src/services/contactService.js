@@ -13,16 +13,14 @@ const addContact = async (userId, { name, surname, email }) => {
 		email,
 		inviteToken,
 	});
-
 	await notifyService.sendInviteEmail({ contact, inviteToken });
-
 	return contact;
 };
 
 const getInviteInfo = async (token) => {
 	const contact = await contactModel.findByInviteToken(token);
 	if (!contact) {
-		const err = new Error("Invalid or expired invite link");
+		const err = new Error("Ссылка недействительна или устарела");
 		err.status = 404;
 		throw err;
 	}
@@ -36,7 +34,7 @@ const getInviteInfo = async (token) => {
 const linkTelegram = async (inviteToken, chatId) => {
 	const contact = await contactModel.findByInviteToken(inviteToken);
 	if (!contact) {
-		const err = new Error("Invalid invite token");
+		const err = new Error("Недействительный токен приглашения");
 		err.status = 404;
 		throw err;
 	}
@@ -46,7 +44,7 @@ const linkTelegram = async (inviteToken, chatId) => {
 const removeContact = async (contactId, userId) => {
 	const deleted = await contactModel.deleteById(contactId, userId);
 	if (!deleted) {
-		const err = new Error("Contact not found");
+		const err = new Error("Контакт не найден");
 		err.status = 404;
 		throw err;
 	}
