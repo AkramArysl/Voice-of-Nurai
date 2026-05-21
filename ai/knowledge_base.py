@@ -1,7 +1,7 @@
 import os
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import Chroma
-from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_huggingface import HuggingFaceEmbeddings
 
 DATA_FOLDER = "data"
 CHROMA_DB_FOLDER = "./chroma_db"
