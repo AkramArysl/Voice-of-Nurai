@@ -9,6 +9,7 @@ from telegram.ext import (
     filters
 )
 from ai_assistant import ask_ai
+from knowledge_base import load_articles_from_folder, get_db_stats
 
 load_dotenv()
 
@@ -173,4 +174,11 @@ app.add_handler(CommandHandler("sos", sos_command))
 app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
 print("Voice of Nurai AI Bot is running...")
+
+stats = get_db_stats()
+if stats["total_chunks"] == 0:
+    print("Loading articles into ChromaDB (first start, may take a minute)...")
+    load_articles_from_folder()
+    print("Database ready.")
+    
 app.run_polling()
