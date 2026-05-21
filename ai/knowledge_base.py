@@ -88,6 +88,19 @@ def get_db_stats():
         "txt_files": txt_count
     }
 
+def init_knowledge_base():
+    global vectorstore
+    if os.path.exists(CHROMA_DB_FOLDER) and os.listdir(CHROMA_DB_FOLDER):
+        vectorstore = Chroma(
+            persist_directory=CHROMA_DB_FOLDER,
+            embedding_function=embeddings
+        )
+        print(f"Knowledge base loaded: {vectorstore._collection.count()} chunks")
+    else:
+        print("Knowledge base not found. Run: python knowledge_base.py")
+
+init_knowledge_base()
+
 if __name__ == "__main__":
     print("=" * 50)
     print("LOADING KNOWLEDGE BASE")

@@ -72,7 +72,6 @@ def ask_ai(user_message, user_id=None):
     headers = {
         "Authorization": f"Bearer {OPENROUTER_API_KEY}",
         "Content-Type": "application/json",
-        "HTTP-Referer": "http://localhost:8080",
         "X-Title": "Voice of Nurai"
     }
 
@@ -82,7 +81,7 @@ def ask_ai(user_message, user_id=None):
             {"role": "system", "content": system_with_context},
             {"role": "user", "content": user_message}
         ],
-        "temperature": 0.5,
+        "temperature": 0.4,
         "max_tokens": 800
     }
 
@@ -97,4 +96,7 @@ def ask_ai(user_message, user_id=None):
             return None
     except Exception as e:
         print(f"Request failed: {e}")
-        return None
+        return (
+            "Сейчас я не могу ответить. "
+            "Если ситуация опасная — нажмите SOS или позвоните 112."
+            )

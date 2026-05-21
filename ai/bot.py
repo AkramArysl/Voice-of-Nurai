@@ -66,6 +66,7 @@ async def sos_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_message = update.message.text
+    print(f"User message: {user_message}")
     await update.message.chat.send_action(action="typing")
     
     if user_message == "🚨 SOS ЭКСТРЕННАЯ ПОМОЩЬ":
@@ -73,7 +74,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
     
     elif user_message == "🏃‍♀️ ЗА МНОЙ ГОНЯТСЯ":
-        answer = """🚨 ВАС ПРЕСЛЕДУЮТ! ДЕЙСТВУЙТЕ НЕМЕДЛЕННО:
+        answer = """🚨 Вас преследуют. Постарайтесь действовать быстро и спокойно:
 
 1. КРИЧИТЕ! Громко кричите "ПОЖАР!" или "ПОМОГИТЕ!"
 
@@ -92,7 +93,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 1. КРИЧИТЕ изо всех сил
 
-2. ЗАЩИЩАЙТЕ уязвимые места: глаза, нос, пах
+2. ЗАЩИЩАЙТЕ уязвимые места: глаза, нос
 
 3. ИСПОЛЬЗУЙТЕ подручные предметы: ключи, телефон, сумку
 
@@ -150,12 +151,13 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
     
     elif user_message == "🆘 ПОМОЩЬ РЯДОМ":
-        answer = ask_ai("мне нужна помощь, где найти безопасное место рядом")
+        answer = ask_ai("мне нужна помощь, где найти безопасное место рядом", user_id=str(update.effective_user.id))
     else:
         answer = ask_ai(user_message, user_id=str(update.effective_user.id))
     
     if answer:
         await update.message.reply_text(answer, reply_markup=get_emergency_keyboard())
+        print("AI response sent")
     else:
         await update.message.reply_text(
             "❌ Произошла ошибка. Пожалуйста, нажмите SOS-кнопку в приложении Nurai или позвоните 112.",
