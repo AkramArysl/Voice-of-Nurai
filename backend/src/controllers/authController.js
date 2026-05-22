@@ -2,8 +2,8 @@ const authService = require("../services/authService");
 
 const COOKIE_OPTIONS = {
 	httpOnly: true,
-	sameSite: "strict",
-	secure: process.env.NODE_ENV === "production",
+	sameSite: "none",
+	secure: true,
 	maxAge: 30 * 24 * 60 * 60 * 1000,
 };
 
