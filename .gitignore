@@ -1,2 +1,17 @@
-node_modules/
-.vite/
+# Secrets
+.env
+
+# Database
+chroma_db/
+
+# Python
+__pycache__/
+*.pyc
+venv/
+.venv/
+
+# IDE
+.vscode/
+.idea/
+
+node_modules
