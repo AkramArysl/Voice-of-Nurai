@@ -1,0 +1,49 @@
+/* Remove any decorative background patterns */
+body {
+  background: white !important;
+}
+
+body::before,
+body::after,
+*::before,
+*::after {
+  background: none !important;
+  background-image: none !important;
+  background-color: transparent !important;
+}
+
+/* Ensure clean white background everywhere */
+html {
+  background: white !important;
+}
+
+.leaflet-container {
+  z-index: 1;
+  font-family: inherit;
+}
+
+.nurai-red-pin-wrapper {
+  background: transparent !important;
+  border: 0;
+}
+
+.nurai-red-pin {
+  align-items: center;
+  background: #dc2626;
+  border: 3px solid #ffffff;
+  border-radius: 50% 50% 50% 0;
+  box-shadow: 0 10px 22px rgb(220 38 38 / 0.35);
+  display: flex;
+  height: 34px;
+  justify-content: center;
+  transform: rotate(-45deg);
+  width: 34px;
+}
+
+.nurai-red-pin-dot {
+  background: #ffffff;
+  border-radius: 999px;
+  display: block;
+  height: 10px;
+  width: 10px;
+}
