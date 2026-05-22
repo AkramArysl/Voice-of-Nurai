@@ -38,7 +38,7 @@ export interface TrackEvent {
 }
 
 const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3001";
-const BOT_USERNAME = import.meta.env.VITE_TELEGRAM_BOT_USERNAME ?? "YourBotName";
+const BOT_USERNAME = import.meta.env.VITE_TELEGRAM_BOT_USERNAME ?? "nurai_safety_bot";
 
 export const config = {
   apiUrl: API_URL,
