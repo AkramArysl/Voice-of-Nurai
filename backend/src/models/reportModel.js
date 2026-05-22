@@ -14,6 +14,15 @@ const findById = async (id) => {
 	return rows[0] || null;
 };
 
+const findByUserId = async (userId) => {
+	const [rows] = await pool.query(
+		`SELECT id, category, description, location, photo_url, created_at
+     FROM reports WHERE user_id = ? ORDER BY created_at DESC`,
+		[userId],
+	);
+	return rows;
+};
+
 const create = async ({
 	userId,
 	category,
@@ -34,15 +43,6 @@ const create = async ({
 	};
 };
 
-const findByUserId = async (userId) => {
-	const [rows] = await pool.query(
-		`SELECT id, category, description, location, photo_url, created_at
-     FROM reports WHERE user_id = ? ORDER BY created_at DESC`,
-		[userId],
-	);
-	return rows;
-};
-
 const deleteById = async (id, userId) => {
 	const [result] = await pool.query(
 		"DELETE FROM reports WHERE id = ? AND user_id = ?",
@@ -51,9 +51,4 @@ const deleteById = async (id, userId) => {
 	return result.affectedRows > 0;
 };
 
-module.exports = {
-	findAll,
-	findById,
-	create,
-	deleteById,
-};
+module.exports = { findAll, findById, findByUserId, create, deleteById };

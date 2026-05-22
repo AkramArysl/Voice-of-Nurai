@@ -3,6 +3,8 @@ const cloudinary = require("../config/cloudinary");
 
 const getAll = async () => reportModel.findAll();
 
+const getMyReports = async (userId) => reportModel.findByUserId(userId);
+
 const create = async (userId, { category, description, location }, file) => {
 	let photoUrl = null;
 
@@ -29,8 +31,6 @@ const create = async (userId, { category, description, location }, file) => {
 	});
 };
 
-const getMyReports = async (userId) => reportModel.findByUserId(userId);
-
 const remove = async (reportId, userId) => {
 	const deleted = await reportModel.deleteById(reportId, userId);
 	if (!deleted) {
@@ -42,4 +42,4 @@ const remove = async (reportId, userId) => {
 	}
 };
 
-module.exports = { getAll, create, remove };
+module.exports = { getAll, getMyReports, create, remove };

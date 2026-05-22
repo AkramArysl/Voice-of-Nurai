@@ -9,19 +9,19 @@ const getAll = async (req, res, next) => {
 	}
 };
 
-const create = async (req, res, next) => {
+const getMyReports = async (req, res, next) => {
 	try {
-		const report = await reportService.create(req.user.id, req.body, req.file);
-		res.status(201).json({ message: "Репорт создан", report });
+		const reports = await reportService.getMyReports(req.user.id);
+		res.json({ reports });
 	} catch (err) {
 		next(err);
 	}
 };
 
-const getMyReports = async (req, res, next) => {
+const create = async (req, res, next) => {
 	try {
-		const reports = await reportService.getMyReports(req.user.id);
-		res.json({ reports });
+		const report = await reportService.create(req.user.id, req.body, req.file);
+		res.status(201).json({ message: "Репорт создан", report });
 	} catch (err) {
 		next(err);
 	}
@@ -36,4 +36,4 @@ const remove = async (req, res, next) => {
 	}
 };
 
-module.exports = { getAll, create, remove };
+module.exports = { getAll, getMyReports, create, remove };
