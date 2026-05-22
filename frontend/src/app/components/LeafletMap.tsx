@@ -1,137 +1,285 @@
 import { useEffect, useRef, useState } from "react";
 
-interface LeafletMapProps {
-  lat: number | null;
-  lng: number | null;
-  height?: string;
+interface MapGLMarker {
+	destroy: () => void;
 }
 
-interface LeafletGlobal {
-  map: (element: HTMLElement) => LeafletMapInstance;
-  tileLayer: (url: string, options: Record<string, unknown>) => { addTo: (map: LeafletMapInstance) => void };
-  marker: (coords: [number, number], options?: Record<string, unknown>) => LeafletMarker;
-  divIcon: (options: Record<string, unknown>) => unknown;
+interface MapGLInstance {
+	destroy: () => void;
+	setCenter: (coords: [number, number]) => void;
 }
 
-interface LeafletMapInstance {
-  setView: (coords: [number, number], zoom: number) => LeafletMapInstance;
-  remove: () => void;
-}
-
-interface LeafletMarker {
-  addTo: (map: LeafletMapInstance) => LeafletMarker;
-  setLatLng: (coords: [number, number]) => void;
+interface MapGLGlobal {
+	Map: new (
+		element: HTMLElement,
+		options: { center: [number, number]; zoom: number; key: string },
+	) => MapGLInstance;
+	Marker: new (
+		map: MapGLInstance,
+		options: { coordinates: [number, number] },
+	) => MapGLMarker;
+	HtmlMarker: new (
+		map: MapGLInstance,
+		options: {
+			coordinates: [number, number];
+			html: string;
+			anchor: [number, number];
+		},
+	) => MapGLMarker;
 }
 
 declare global {
-  interface Window {
-    L?: LeafletGlobal;
-  }
+	interface Window {
+		mapgl?: MapGLGlobal;
+	}
 }
 
-const DEFAULT_POSITION: [number, number] = [42.8746, 74.5698];
-
-function loadLeaflet(): Promise<LeafletGlobal> {
-  if (window.L) {
-    return Promise.resolve(window.L);
-  }
-
-  return new Promise((resolve, reject) => {
-    const existingScript = document.querySelector<HTMLScriptElement>("script[data-leaflet]");
-    const existingLink = document.querySelector<HTMLLinkElement>("link[data-leaflet]");
-
-    if (!existingLink) {
-      const link = document.createElement("link");
-      link.rel = "stylesheet";
-      link.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
-      link.dataset.leaflet = "true";
-      document.head.appendChild(link);
-    }
-
-    const finish = () => {
-      if (window.L) {
-        resolve(window.L);
-      } else {
-        reject(new Error("Не удалось загрузить карту"));
-      }
-    };
-
-    if (existingScript) {
-      existingScript.addEventListener("load", finish, { once: true });
-      existingScript.addEventListener("error", () => reject(new Error("Не удалось загрузить карту")), { once: true });
-      return;
-    }
-
-    const script = document.createElement("script");
-    script.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
-    script.async = true;
-    script.dataset.leaflet = "true";
-    script.onload = finish;
-    script.onerror = () => reject(new Error("Не удалось загрузить карту"));
-    document.body.appendChild(script);
-  });
+interface LeafletMapProps {
+	lat: number | null;
+	lng: number | null;
+	height?: string;
 }
 
-export default function LeafletMap({ lat, lng, height = "420px" }: LeafletMapProps) {
-  const mapElement = useRef<HTMLDivElement | null>(null);
-  const map = useRef<LeafletMapInstance | null>(null);
-  const marker = useRef<LeafletMarker | null>(null);
-  const [error, setError] = useState("");
-  const hasPosition = typeof lat === "number" && typeof lng === "number";
-  const currentPosition: [number, number] | null = hasPosition ? [lat as number, lng as number] : null;
+interface PlacesItem {
+	point?: { lat: number; lon: number };
+}
 
-  useEffect(() => {
-    let cancelled = false;
+interface PlacesResponse {
+	result?: { items?: PlacesItem[] };
+}
 
-    loadLeaflet()
-      .then((L) => {
-        if (cancelled || !mapElement.current || map.current) {
-          return;
-        }
+const DEFAULT_CENTER: [number, number] = [74.5698, 42.8746];
+const API_KEY = "d1209e11-0a90-484b-a728-affd4b0a09b2";
 
-        const startPosition: [number, number] = currentPosition ?? DEFAULT_POSITION;
-        const pin = L.divIcon({
-          className: "nur-map-pin",
-          html: "<span></span>",
-          iconSize: [24, 24],
-          iconAnchor: [12, 12],
-        });
+// How many degrees of movement before we re-fetch safe spots (~200 metres)
+const REFETCH_THRESHOLD = 0.002;
 
-        map.current = L.map(mapElement.current).setView(startPosition, 15);
-        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-          attribution: "© OpenStreetMap",
-        }).addTo(map.current);
-        marker.current = L.marker(startPosition, { icon: pin }).addTo(map.current);
-      })
-      .catch((mapError: unknown) => {
-        setError(mapError instanceof Error ? mapError.message : "Не удалось загрузить карту");
-      });
+const SAFE_SPOT_QUERIES = [
+	{ q: "больница", color: "#2563eb", emoji: "🏥" },
+	{ q: "поликлиника", color: "#2563eb", emoji: "🏥" },
+	{ q: "скорая помощь", color: "#2563eb", emoji: "🏥" },
+	{ q: "милиция", color: "#16a34a", emoji: "🚔" },
+	{ q: "полиция", color: "#16a34a", emoji: "🚔" },
+	{ q: "пункт полиции", color: "#16a34a", emoji: "🚔" },
+];
 
-    return () => {
-      cancelled = true;
-      map.current?.remove();
-      map.current = null;
-      marker.current = null;
-    };
-  }, []);
+function makeHtmlMarker(color: string, emoji: string): string {
+	return `
+    <div style="
+      background:${color};
+      color:#fff;
+      border-radius:50%;
+      width:36px;
+      height:36px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-size:18px;
+      box-shadow:0 2px 6px rgba(0,0,0,0.35);
+      border:2px solid #fff;
+    ">${emoji}</div>
+  `;
+}
 
-  useEffect(() => {
-    if (!hasPosition || !map.current || !marker.current) {
-      return;
-    }
+async function fetchSafeSpots(
+	centerLat: number,
+	centerLng: number,
+): Promise<Array<{ coords: [number, number]; color: string; emoji: string }>> {
+	const results: Array<{
+		coords: [number, number];
+		color: string;
+		emoji: string;
+	}> = [];
 
-    const nextPosition: [number, number] = [lat as number, lng as number];
-    marker.current.setLatLng(nextPosition);
-    map.current.setView(nextPosition, 16);
-  }, [hasPosition, lat, lng]);
+	await Promise.allSettled(
+		SAFE_SPOT_QUERIES.map(async ({ q, color, emoji }) => {
+			const url = `https://catalog.api.2gis.com/3.0/items?q=${encodeURIComponent(q)}&location=${centerLng},${centerLat}&radius=2000&fields=items.point&page_size=10&key=${API_KEY}`;
+			const res = await fetch(url);
+			const data = (await res.json()) as PlacesResponse;
+			for (const item of data.result?.items ?? []) {
+				if (item.point) {
+					results.push({
+						coords: [item.point.lon, item.point.lat],
+						color,
+						emoji,
+					});
+				}
+			}
+		}),
+	);
 
-  if (error) {
-    return (
-      <div className="flex items-center justify-center rounded-lg border border-rose-200 bg-rose-50 p-6 text-center text-sm text-rose-700" style={{ height }}>
-        {error}
-      </div>
-    );
-  }
+	return results;
+}
 
-  return <div ref={mapElement} className="nur-map-shell overflow-hidden rounded-lg border border-slate-200" style={{ height }} />;
+function load2GIS(): Promise<MapGLGlobal> {
+	if (window.mapgl) return Promise.resolve(window.mapgl);
+
+	return new Promise((resolve, reject) => {
+		const existing =
+			document.querySelector<HTMLScriptElement>("script[data-mapgl]");
+
+		const finish = () => {
+			if (window.mapgl) resolve(window.mapgl);
+			else reject(new Error("Не удалось загрузить карту"));
+		};
+
+		if (existing) {
+			existing.addEventListener("load", finish, { once: true });
+			return;
+		}
+
+		const script = document.createElement("script");
+		script.src = "https://mapgl.2gis.com/api/js/v1";
+		script.async = true;
+		script.dataset.mapgl = "true";
+		script.onload = finish;
+		script.onerror = () => reject(new Error("Не удалось загрузить карту"));
+		document.body.appendChild(script);
+	});
+}
+
+export default function LeafletMap({
+	lat,
+	lng,
+	height = "420px",
+}: LeafletMapProps) {
+	const mapElement = useRef<HTMLDivElement | null>(null);
+	const mapInstance = useRef<MapGLInstance | null>(null);
+	const markerInstance = useRef<MapGLMarker | null>(null);
+	const safeSpotMarkers = useRef<MapGLMarker[]>([]);
+	const lastFetchedCenter = useRef<[number, number] | null>(null);
+	const [error, setError] = useState("");
+
+	const hasPosition = typeof lat === "number" && typeof lng === "number";
+
+	// Initial map setup — runs once when position first becomes available
+	useEffect(() => {
+		markerInstance.current?.destroy();
+		safeSpotMarkers.current.forEach((m) => m.destroy());
+		safeSpotMarkers.current = [];
+		mapInstance.current?.destroy();
+		mapInstance.current = null;
+		markerInstance.current = null;
+		lastFetchedCenter.current = null;
+
+		let cancelled = false;
+
+		const centerLat = hasPosition ? (lat as number) : DEFAULT_CENTER[1];
+		const centerLng = hasPosition ? (lng as number) : DEFAULT_CENTER[0];
+
+		lastFetchedCenter.current = [centerLat, centerLng];
+
+		Promise.all([load2GIS(), fetchSafeSpots(centerLat, centerLng)])
+			.then(([mapgl, spots]) => {
+				if (cancelled || !mapElement.current) return;
+
+				const center: [number, number] = hasPosition
+					? [lng as number, lat as number]
+					: DEFAULT_CENTER;
+
+				mapInstance.current = new mapgl.Map(mapElement.current, {
+					center,
+					zoom: 13,
+					key: API_KEY,
+				});
+
+				markerInstance.current = new mapgl.Marker(mapInstance.current, {
+					coordinates: center,
+				});
+
+				safeSpotMarkers.current = spots.map(
+					({ coords, color, emoji }) =>
+						new mapgl.HtmlMarker(mapInstance.current!, {
+							coordinates: coords,
+							html: makeHtmlMarker(color, emoji),
+							anchor: [18, 18],
+						}),
+				);
+			})
+			.catch((err: unknown) => {
+				if (!cancelled) {
+					setError(
+						err instanceof Error ? err.message : "Не удалось загрузить карту",
+					);
+				}
+			});
+
+		return () => {
+			cancelled = true;
+			markerInstance.current?.destroy();
+			safeSpotMarkers.current.forEach((m) => m.destroy());
+			safeSpotMarkers.current = [];
+			mapInstance.current?.destroy();
+			mapInstance.current = null;
+			markerInstance.current = null;
+		};
+	}, [hasPosition]);
+
+	// Position update effect — moves the marker and re-fetches safe spots
+	// only when the user has moved more than ~200 metres from the last fetch
+	useEffect(() => {
+		if (!hasPosition || !mapInstance.current) return;
+
+		const coords: [number, number] = [lng as number, lat as number];
+
+		// Always move the user marker
+		markerInstance.current?.destroy();
+		markerInstance.current = new (window.mapgl as MapGLGlobal).Marker(
+			mapInstance.current,
+			{ coordinates: coords },
+		);
+		mapInstance.current.setCenter(coords);
+
+		// Re-fetch safe spots only if moved significantly
+		const prev = lastFetchedCenter.current;
+		const movedEnough =
+			!prev ||
+			Math.abs((lat as number) - prev[0]) > REFETCH_THRESHOLD ||
+			Math.abs((lng as number) - prev[1]) > REFETCH_THRESHOLD;
+
+		if (!movedEnough) return;
+
+		lastFetchedCenter.current = [lat as number, lng as number];
+
+		fetchSafeSpots(lat as number, lng as number)
+			.then((spots) => {
+				if (!mapInstance.current) return;
+
+				// Clear old safe spot markers
+				safeSpotMarkers.current.forEach((m) => m.destroy());
+				safeSpotMarkers.current = [];
+
+				// Add new ones
+				safeSpotMarkers.current = spots.map(
+					({ coords: spotCoords, color, emoji }) =>
+						new (window.mapgl as MapGLGlobal).HtmlMarker(mapInstance.current!, {
+							coordinates: spotCoords,
+							html: makeHtmlMarker(color, emoji),
+							anchor: [18, 18],
+						}),
+				);
+			})
+			.catch(() => {
+				// Silently ignore — safe spots are best-effort
+			});
+	}, [hasPosition, lat, lng]);
+
+	if (error) {
+		return (
+			<div
+				className="flex items-center justify-center rounded-lg border border-rose-200 bg-rose-50 p-6 text-center text-sm text-rose-700"
+				style={{ height }}
+			>
+				{error}
+			</div>
+		);
+	}
+
+	return (
+		<div
+			ref={mapElement}
+			className="nur-map-shell overflow-hidden rounded-lg border border-slate-200"
+			style={{ height }}
+		/>
+	);
 }

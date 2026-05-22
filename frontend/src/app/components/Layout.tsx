@@ -55,7 +55,7 @@ export default function Layout({ activePath, children, user, onLogout }: LayoutP
             {user ? (
               <>
                 <span className="hidden text-sm text-slate-600 md:inline">
-                  Добро пожаловать, <strong className="text-slate-950">{getUserName(user)}</strong>
+                  <strong className="text-slate-950">{getUserName(user)}</strong>
                 </span>
                 <Button variant="outline" size="sm" onClick={onLogout} className="gap-2">
                   <LogOut className="h-4 w-4" />

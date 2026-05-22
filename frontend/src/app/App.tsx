@@ -11,127 +11,183 @@ import SOSPage from "./components/SOSPage";
 import TrackPage from "./components/TrackPage";
 
 interface AuthResponse {
-  user: User;
+	user: User;
 }
 
 export default function App() {
-  const [currentPath, setCurrentPath] = useState(window.location.pathname);
-  const [user, setUser] = useState<User | null>(null);
-  const [authChecked, setAuthChecked] = useState(false);
-  const activeSosSessionId = useMemo(() => sessionStorage.getItem("activeSosSessionId"), [currentPath]);
+	const [currentPath, setCurrentPath] = useState(window.location.pathname);
+	const [user, setUser] = useState<User | null>(null);
+	const [authChecked, setAuthChecked] = useState(false);
+	const [position, setPosition] = useState<{ lat: number; lng: number } | null>(
+		null,
+	); // add this
+	const activeSosSessionId = useMemo(
+		() => sessionStorage.getItem("activeSosSessionId"),
+		[currentPath],
+	);
 
-  const navigate = (path: string) => {
-    window.history.pushState({}, "", path);
-    setCurrentPath(new URL(path, window.location.origin).pathname);
-    window.scrollTo(0, 0);
-  };
+	useEffect(() => {
+		navigator.geolocation?.getCurrentPosition(
+			(pos) =>
+				setPosition({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+			() => undefined,
+			{ enableHighAccuracy: true, timeout: 8000 },
+		);
+	}, []);
 
-  useEffect(() => {
-    const handlePathChange = () => setCurrentPath(window.location.pathname);
+	const navigate = (path: string) => {
+		window.history.pushState({}, "", path);
+		setCurrentPath(new URL(path, window.location.origin).pathname);
+		window.scrollTo(0, 0);
+	};
 
-    const handleClick = (event: MouseEvent) => {
-      const target = event.target as HTMLElement;
-      const link = target.closest("a");
+	useEffect(() => {
+		const handlePathChange = () => setCurrentPath(window.location.pathname);
 
-      if (!link || !link.href || !link.href.startsWith(window.location.origin) || link.target === "_blank") {
-        return;
-      }
+		const handleClick = (event: MouseEvent) => {
+			const target = event.target as HTMLElement;
+			const link = target.closest("a");
 
-      event.preventDefault();
-      navigate(new URL(link.href).pathname);
-    };
+			if (
+				!link ||
+				!link.href ||
+				!link.href.startsWith(window.location.origin) ||
+				link.target === "_blank"
+			) {
+				return;
+			}
 
-    window.addEventListener("popstate", handlePathChange);
-    document.addEventListener("click", handleClick);
+			event.preventDefault();
+			navigate(new URL(link.href).pathname);
+		};
 
-    return () => {
-      window.removeEventListener("popstate", handlePathChange);
-      document.removeEventListener("click", handleClick);
-    };
-  }, []);
+		window.addEventListener("popstate", handlePathChange);
+		document.addEventListener("click", handleClick);
 
-  useEffect(() => {
-    apiRequest<AuthResponse>("/api/auth/me")
-      .then((data) => setUser(data.user))
-      .catch(() => setUser(null))
-      .finally(() => setAuthChecked(true));
-  }, []);
+		return () => {
+			window.removeEventListener("popstate", handlePathChange);
+			document.removeEventListener("click", handleClick);
+		};
+	}, []);
 
-  useEffect(() => {
-    const protectedPaths = ["/sos", "/sos/active", "/contacts", "/report", "/report/new"];
-    const shouldRedirect = authChecked && !user && protectedPaths.includes(currentPath);
+	useEffect(() => {
+		apiRequest<AuthResponse>("/api/auth/me")
+			.then((data) => setUser(data.user))
+			.catch(() => setUser(null))
+			.finally(() => setAuthChecked(true));
+	}, []);
 
-    if (shouldRedirect) {
-      navigate("/login");
-    }
-  }, [authChecked, currentPath, user]);
+	useEffect(() => {
+		const protectedPaths = [
+			"/sos",
+			"/sos/active",
+			"/contacts",
+			"/report",
+			"/report/new",
+		];
+		const shouldRedirect =
+			authChecked && !user && protectedPaths.includes(currentPath);
 
-  const handleLogout = async () => {
-    try {
-      await apiRequest<{ message: string }>("/api/auth/logout", { method: "POST" });
-    } catch {
-      // Даже если сервер недоступен, очищаем локальное состояние интерфейса.
-    } finally {
-      setUser(null);
-      sessionStorage.removeItem("activeSosSessionId");
-      navigate("/");
-    }
-  };
+		if (shouldRedirect) {
+			navigate("/login");
+		}
+	}, [authChecked, currentPath, user]);
 
-  const handleAuthSuccess = (nextUser: User) => {
-    setUser(nextUser);
-    navigator.geolocation?.getCurrentPosition(
-      () => undefined,
-      () => undefined,
-      { enableHighAccuracy: true, timeout: 8000 },
-    );
-    navigate("/");
-  };
+	const handleLogout = async () => {
+		try {
+			await apiRequest<{ message: string }>("/api/auth/logout", {
+				method: "POST",
+			});
+		} catch {
+			// Даже если сервер недоступен, очищаем локальное состояние интерфейса.
+		} finally {
+			setUser(null);
+			sessionStorage.removeItem("activeSosSessionId");
+			navigate("/");
+		}
+	};
 
-  const renderPage = () => {
-    if (!authChecked) {
-      return <div className="mx-auto max-w-7xl px-4 py-12 text-slate-600">Загрузка...</div>;
-    }
+	const handleAuthSuccess = (nextUser: User) => {
+		setUser(nextUser);
+		navigator.geolocation?.getCurrentPosition(
+			(pos) =>
+				setPosition({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+			() => undefined,
+			{ enableHighAccuracy: true, timeout: 8000 },
+		);
+		navigate("/");
+	};
 
-    if (currentPath === "/login") {
-      return <LoginPage mode="login" onAuthSuccess={handleAuthSuccess} />;
-    }
+	const renderPage = () => {
+		if (!authChecked) {
+			return (
+				<div className="mx-auto max-w-7xl px-4 py-12 text-slate-600">
+					Загрузка...
+				</div>
+			);
+		}
 
-    if (currentPath === "/register") {
-      return <LoginPage mode="register" onAuthSuccess={handleAuthSuccess} />;
-    }
+		if (currentPath === "/login") {
+			return <LoginPage mode="login" onAuthSuccess={handleAuthSuccess} />;
+		}
 
-    if (currentPath === "/ai") {
-      return <AIPage />;
-    }
+		if (currentPath === "/register") {
+			return <LoginPage mode="register" onAuthSuccess={handleAuthSuccess} />;
+		}
 
-    if (currentPath === "/sos") {
-      return <SOSPage user={user} onStarted={(sessionId) => navigate(`/sos/active?sessionId=${sessionId}`)} />;
-    }
+		if (currentPath === "/ai") {
+			return <AIPage />;
+		}
 
-    if (currentPath === "/sos/active") {
-      return <ActiveSosPage sessionId={new URLSearchParams(window.location.search).get("sessionId") ?? activeSosSessionId} onResolved={() => navigate("/")} />;
-    }
+		if (currentPath === "/sos") {
+			return (
+				<SOSPage
+					user={user}
+					onStarted={(sessionId) =>
+						navigate(`/sos/active?sessionId=${sessionId}`)
+					}
+					onCancelled={() => navigate("/")}
+				/>
+			);
+		}
 
-    if (currentPath.startsWith("/track/")) {
-      const sessionId = currentPath.replace("/track/", "");
-      return <TrackPage sessionId={sessionId} />;
-    }
+		if (currentPath === "/sos/active") {
+			return (
+				<ActiveSosPage
+					sessionId={
+						new URLSearchParams(window.location.search).get("sessionId") ??
+						activeSosSessionId
+					}
+					onResolved={() => navigate("/")}
+				/>
+			);
+		}
 
-    if (currentPath === "/contacts") {
-      return <ContactsPage />;
-    }
+		if (currentPath === "/contacts") {
+			return <ContactsPage />;
+		}
 
-    if (currentPath === "/report/new" || currentPath === "/report") {
-      return <ReportPage onCreated={() => navigate("/")} />;
-    }
+		if (currentPath === "/report/new" || currentPath === "/report") {
+			return <ReportPage onCreated={() => navigate("/")} />;
+		}
 
-    return <HomePage user={user} />;
-  };
+		return (
+			<HomePage
+				user={user}
+				lat={position?.lat ?? null}
+				lng={position?.lng ?? null}
+			/>
+		);
+	};
 
-  return (
-    <Layout activePath={currentPath} user={user} onLogout={handleLogout}>
-      {renderPage()}
-    </Layout>
-  );
+	if (currentPath.startsWith("/track/")) {
+		const sessionId = currentPath.replace("/track/", "");
+		return <TrackPage sessionId={sessionId} />;
+	}
+
+	return (
+		<Layout activePath={currentPath} user={user} onLogout={handleLogout}>
+			{renderPage()}
+		</Layout>
+	);
 }
