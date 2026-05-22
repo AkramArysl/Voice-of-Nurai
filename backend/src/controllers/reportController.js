@@ -18,6 +18,15 @@ const create = async (req, res, next) => {
 	}
 };
 
+const getMyReports = async (req, res, next) => {
+	try {
+		const reports = await reportService.getMyReports(req.user.id);
+		res.json({ reports });
+	} catch (err) {
+		next(err);
+	}
+};
+
 const remove = async (req, res, next) => {
 	try {
 		await reportService.remove(req.params.id, req.user.id);

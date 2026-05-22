@@ -8,6 +8,7 @@ const { createReportSchema } = require("../validators/reportValidator");
 const router = express.Router();
 
 router.get("/", reportController.getAll);
+router.get('/my', checkAuth, reportController.getMyReports);
 
 router.post(
 	"/",

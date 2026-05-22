@@ -34,6 +34,15 @@ const create = async ({
 	};
 };
 
+const findByUserId = async (userId) => {
+	const [rows] = await pool.query(
+		`SELECT id, category, description, location, photo_url, created_at
+     FROM reports WHERE user_id = ? ORDER BY created_at DESC`,
+		[userId],
+	);
+	return rows;
+};
+
 const deleteById = async (id, userId) => {
 	const [result] = await pool.query(
 		"DELETE FROM reports WHERE id = ? AND user_id = ?",

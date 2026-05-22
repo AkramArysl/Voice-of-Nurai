@@ -29,6 +29,8 @@ const create = async (userId, { category, description, location }, file) => {
 	});
 };
 
+const getMyReports = async (userId) => reportModel.findByUserId(userId);
+
 const remove = async (reportId, userId) => {
 	const deleted = await reportModel.deleteById(reportId, userId);
 	if (!deleted) {
