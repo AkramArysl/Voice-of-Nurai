@@ -28,17 +28,21 @@ const sendEmail = async ({ to, subject, html }) => {
 	}
 
 	const from = process.env.SMTP_USER;
+	const encodedSubject =
+		"=?UTF-8?B?" + Buffer.from(subject, "utf-8").toString("base64") + "?=";
+
 	const messageParts = [
 		`From: "Voice of Nurai" <${from}>`,
 		`To: ${to}`,
-		`Subject: ${subject}`,
+		`Subject: ${encodedSubject}`,
 		"MIME-Version: 1.0",
 		"Content-Type: text/html; charset=utf-8",
+		"Content-Transfer-Encoding: base64",
 		"",
-		html,
+		Buffer.from(html, "utf-8").toString("base64"),
 	];
 	const rawMessage = messageParts.join("\r\n");
-	const encodedMessage = Buffer.from(rawMessage)
+	const encodedMessage = Buffer.from(rawMessage, "utf-8")
 		.toString("base64")
 		.replace(/\+/g, "-")
 		.replace(/\//g, "_")
