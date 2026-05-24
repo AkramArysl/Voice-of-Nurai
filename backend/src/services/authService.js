@@ -4,7 +4,7 @@ const userModel = require("../models/userModel");
 const tokenModel = require("../models/tokenModel");
 
 const SALT_ROUNDS = 12;
-const TOKEN_TTL_DAYS = 30;
+const TOKEN_TTL_DAYS = 365;
 
 const register = async ({ username, email, password }) => {
 	const existingEmail = await userModel.findByEmail(email);
