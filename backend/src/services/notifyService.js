@@ -1,27 +1,65 @@
-const nodemailer = require("nodemailer");
-
-const transporter = nodemailer.createTransport({
-	service: "gmail",
-	auth: {
-		type: "OAuth2",
-		user: process.env.SMTP_USER,
-		clientId: process.env.GMAIL_CLIENT_ID,
-		clientSecret: process.env.GMAIL_CLIENT_SECRET,
-		refreshToken: process.env.GMAIL_REFRESH_TOKEN,
-	},
-});
-
 const sendEmail = async ({ to, subject, html }) => {
-	if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
-		console.warn("SMTP не настроен, письмо не отправлено");
+	if (
+		!process.env.GMAIL_CLIENT_ID ||
+		!process.env.GMAIL_CLIENT_SECRET ||
+		!process.env.GMAIL_REFRESH_TOKEN
+	) {
+		console.warn("Gmail OAuth2 не настроен, письмо не отправлено");
 		return;
 	}
-	await transporter.sendMail({
-		from: `"Voice of Nurai" <${process.env.SMTP_USER}>`,
-		to,
-		subject,
-		html,
+
+	const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
+		method: "POST",
+		headers: { "Content-Type": "application/x-www-form-urlencoded" },
+		body: new URLSearchParams({
+			client_id: process.env.GMAIL_CLIENT_ID,
+			client_secret: process.env.GMAIL_CLIENT_SECRET,
+			refresh_token: process.env.GMAIL_REFRESH_TOKEN,
+			grant_type: "refresh_token",
+		}),
 	});
+
+	const tokenData = await tokenRes.json();
+	const accessToken = tokenData.access_token;
+
+	if (!accessToken) {
+		console.error("Не удалось получить access token:", tokenData);
+		return;
+	}
+
+	const from = process.env.SMTP_USER;
+	const messageParts = [
+		`From: "Voice of Nurai" <${from}>`,
+		`To: ${to}`,
+		`Subject: ${subject}`,
+		"MIME-Version: 1.0",
+		"Content-Type: text/html; charset=utf-8",
+		"",
+		html,
+	];
+	const rawMessage = messageParts.join("\r\n");
+	const encodedMessage = Buffer.from(rawMessage)
+		.toString("base64")
+		.replace(/\+/g, "-")
+		.replace(/\//g, "_")
+		.replace(/=+$/, "");
+
+	const sendRes = await fetch(
+		"https://gmail.googleapis.com/gmail/v1/users/me/messages/send",
+		{
+			method: "POST",
+			headers: {
+				Authorization: `Bearer ${accessToken}`,
+				"Content-Type": "application/json",
+			},
+			body: JSON.stringify({ raw: encodedMessage }),
+		},
+	);
+
+	if (!sendRes.ok) {
+		const err = await sendRes.json();
+		console.error("Gmail API ошибка:", err);
+	}
 };
 
 const sendTelegram = async (chatId, text) => {
