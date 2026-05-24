@@ -17,7 +17,7 @@ const sendEmail = async ({ to, subject, html }) => {
 		return;
 	}
 	await transporter.sendMail({
-		from: process.env.SMTP_USER,
+		from: `"Voice of Nurai" <${process.env.SMTP_USER}>`,
 		to,
 		subject,
 		html,
