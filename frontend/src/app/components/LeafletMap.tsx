@@ -49,9 +49,7 @@ interface PlacesResponse {
 }
 
 const DEFAULT_CENTER: [number, number] = [74.5698, 42.8746];
-const API_KEY = "d1209e11-0a90-484b-a728-affd4b0a09b2";
-
-// How many degrees of movement before we re-fetch safe spots (~200 metres)
+const API_KEY = import.meta.env.VITE_2GIS_API_KEY ?? "";
 const REFETCH_THRESHOLD = 0.002;
 
 const SAFE_SPOT_QUERIES = [
@@ -152,7 +150,6 @@ export default function LeafletMap({
 
 	const hasPosition = typeof lat === "number" && typeof lng === "number";
 
-	// Initial map setup — runs once when position first becomes available
 	useEffect(() => {
 		markerInstance.current?.destroy();
 		safeSpotMarkers.current.forEach((m) => m.destroy());
@@ -215,14 +212,11 @@ export default function LeafletMap({
 		};
 	}, [hasPosition]);
 
-	// Position update effect — moves the marker and re-fetches safe spots
-	// only when the user has moved more than ~200 metres from the last fetch
 	useEffect(() => {
 		if (!hasPosition || !mapInstance.current) return;
 
 		const coords: [number, number] = [lng as number, lat as number];
 
-		// Always move the user marker
 		markerInstance.current?.destroy();
 		markerInstance.current = new (window.mapgl as MapGLGlobal).Marker(
 			mapInstance.current,
@@ -230,7 +224,6 @@ export default function LeafletMap({
 		);
 		mapInstance.current.setCenter(coords);
 
-		// Re-fetch safe spots only if moved significantly
 		const prev = lastFetchedCenter.current;
 		const movedEnough =
 			!prev ||
@@ -245,11 +238,9 @@ export default function LeafletMap({
 			.then((spots) => {
 				if (!mapInstance.current) return;
 
-				// Clear old safe spot markers
 				safeSpotMarkers.current.forEach((m) => m.destroy());
 				safeSpotMarkers.current = [];
 
-				// Add new ones
 				safeSpotMarkers.current = spots.map(
 					({ coords: spotCoords, color, emoji }) =>
 						new (window.mapgl as MapGLGlobal).HtmlMarker(mapInstance.current!, {
@@ -260,7 +251,6 @@ export default function LeafletMap({
 				);
 			})
 			.catch(() => {
-				// Silently ignore — safe spots are best-effort
 			});
 	}, [hasPosition, lat, lng]);
 
